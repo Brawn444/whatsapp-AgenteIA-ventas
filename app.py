@@ -4,6 +4,7 @@ import requests
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from negocio import restaurante_demo
 
 load_dotenv(override=True)
 
@@ -16,11 +17,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
-SYSTEM_PROMPT = (
-    "Eres un asistente virtual de atención al cliente para un negocio local. "
-    "Respondes de forma amable, breve y profesional, en español."
-)
-
+SYSTEM_PROMPT = restaurante_demo.generar_prompt()
 # Diccionario: numero_telefono -> sesion de chat con Gemini
 conversaciones = {}
 
