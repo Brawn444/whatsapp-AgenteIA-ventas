@@ -2,6 +2,8 @@ from flask import Flask, request
 import os
 import requests
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
@@ -10,6 +12,14 @@ app = Flask(__name__)
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+
+SYSTEM_PROMPT = (
+    "Eres un asistente virtual de atención al cliente para un negocio local. "
+    "Respondes de forma amable, breve y profesional, en español."
+)
 
 
 @app.route("/", methods=["GET"])
@@ -29,7 +39,6 @@ def webhook():
         else:
             return "Token inválido", 403
 
-    # POST: mensaje entrante
     data = request.get_json()
     print("Mensaje recibido:", data)
 
@@ -45,13 +54,24 @@ def webhook():
 
             print(f"Mensaje de {from_number}: {text}")
 
-            # Responder automáticamente
-            send_message(from_number, f"Recibí tu mensaje: {text}")
+            respuesta_ia = ask_gemini(text)
+            send_message(from_number, respuesta_ia)
 
     except (KeyError, IndexError) as e:
         print("Sin mensaje nuevo o error:", e)
 
     return "OK", 200
+
+
+def ask_gemini(text):
+    response = gemini_client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=text,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT
+        )
+    )
+    return response.text
 
 
 def send_message(to, text):
