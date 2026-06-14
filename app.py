@@ -21,6 +21,9 @@ SYSTEM_PROMPT = (
     "Respondes de forma amable, breve y profesional, en español."
 )
 
+# Diccionario: numero_telefono -> sesion de chat con Gemini
+conversaciones = {}
+
 
 @app.route("/", methods=["GET"])
 def home():
@@ -54,7 +57,7 @@ def webhook():
 
             print(f"Mensaje de {from_number}: {text}")
 
-            respuesta_ia = ask_gemini(text)
+            respuesta_ia = ask_gemini(from_number, text)
             send_message(from_number, respuesta_ia)
 
     except (KeyError, IndexError) as e:
@@ -63,14 +66,21 @@ def webhook():
     return "OK", 200
 
 
-def ask_gemini(text):
-    response = gemini_client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=text,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT
+def get_chat(from_number):
+    """Devuelve la sesion de chat de este cliente, creando una nueva si no existe."""
+    if from_number not in conversaciones:
+        conversaciones[from_number] = gemini_client.chats.create(
+            model="gemini-2.5-flash",
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT
+            )
         )
-    )
+    return conversaciones[from_number]
+
+
+def ask_gemini(from_number, text):
+    chat = get_chat(from_number)
+    response = chat.send_message(text)
     return response.text
 
 
