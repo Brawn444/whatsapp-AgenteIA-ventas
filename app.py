@@ -1,10 +1,14 @@
 from flask import Flask, request
 import os
+import logging
 import requests
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from negocio import restaurante_demo
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv(override=True)
 
@@ -39,26 +43,31 @@ def webhook():
         else:
             return "Token inválido", 403
 
-    data = request.get_json()
-    print("Mensaje recibido:", data)
+    data = request.get_json(silent=True) or {}
 
     try:
-        entry = data["entry"][0]
-        changes = entry["changes"][0]
-        value = changes["value"]
+        value = data["entry"][0]["changes"][0]["value"]
 
-        if "messages" in value:
-            message = value["messages"][0]
+        for message in value.get("messages", []):
             from_number = message["from"]
+
+            if message.get("type") != "text":
+                send_message(from_number, "Por ahora solo entiendo mensajes de texto 😊")
+                continue
+
             text = message["text"]["body"]
+            logger.info("Mensaje recibido de %s", from_number)
 
-            print(f"Mensaje de {from_number}: {text}")
+            try:
+                respuesta_ia = ask_gemini(from_number, text)
+            except Exception:
+                logger.exception("Error al consultar Gemini")
+                respuesta_ia = "Tuve un problema, ¿me repites por favor?"
 
-            respuesta_ia = ask_gemini(from_number, text)
             send_message(from_number, respuesta_ia)
 
-    except (KeyError, IndexError) as e:
-        print("Sin mensaje nuevo o error:", e)
+    except (KeyError, IndexError):
+        logger.info("Evento sin mensajes")
 
     return "OK", 200
 
@@ -78,7 +87,7 @@ def get_chat(from_number):
 def ask_gemini(from_number, text):
     chat = get_chat(from_number)
     response = chat.send_message(text)
-    return response.text
+    return response.text or "No pude generar una respuesta, ¿me repites por favor?"
 
 
 def send_message(to, text):
@@ -94,7 +103,8 @@ def send_message(to, text):
         "text": {"body": text}
     }
     response = requests.post(url, headers=headers, json=payload)
-    print("Respuesta de envío:", response.status_code, response.text)
+    if not response.ok:
+        logger.error("Fallo al enviar mensaje: %s %s", response.status_code, response.text)
 
 
 if __name__ == "__main__":
