@@ -4,10 +4,6 @@ Prototipo funcional de un agente conversacional para WhatsApp que atiende a los 
 
 Incluye un restaurante de ejemplo ("El Sabor Costeño"), pero los datos del negocio son configurables.
 
-## Demo
-
-![Demo del bot](demo.png)
-
 ## Qué hace
 
 - Recibe los mensajes de los clientes por WhatsApp mediante un webhook.
