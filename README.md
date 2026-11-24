@@ -35,7 +35,8 @@ Incluye un restaurante de ejemplo ("El Sabor Costeño"), pero los datos del nego
 ├── negocio.py      # Datos del negocio (menú, horario) y generación de las instrucciones de la IA
 ├── subscribe.py    # Suscribe la app a la cuenta de WhatsApp Business (se ejecuta una vez)
 ├── requirements.txt
-└── .env.example
+├── .env.example
+└── LICENSE         # Licencia MIT
 ```
 
 Para usarlo con otro negocio solo hay que crear otro objeto `Negocio` en `negocio.py` con su nombre, horario, dirección y menú.
@@ -76,15 +77,26 @@ python app.py
 python subscribe.py
 ```
 
-## Limitaciones y próximas mejoras
+## Alcance y próximas mejoras
 
-Es un prototipo. Lo que sigue:
+Es una demo funcional pensada para mostrar el flujo completo de un agente de ventas por WhatsApp. Por decisión de alcance **no usa base de datos todavía**: la memoria de las conversaciones vive en el programa y se reinicia con el servidor.
 
-- [ ] Guardar los pedidos y las conversaciones en una base de datos (SQLite o MySQL). Hoy la memoria vive en el programa y se pierde al reiniciarlo.
+Ya incluye:
+
+- [x] Manejo de errores cuando falla la API de Gemini o de WhatsApp (mensaje de respaldo al cliente y registro del error).
+- [x] Respuesta a mensajes que no son de texto (imágenes, audios).
+- [x] Procesamiento de varios mensajes en un mismo evento del webhook.
+- [x] Registro con `logging`, sin exponer el contenido de las conversaciones.
+
+Siguiente paso planeado:
+
+- [ ] Persistencia con SQLite: guardar conversaciones y pedidos en una base de datos (tablas `mensajes` y `pedidos`), para que la memoria no se pierda al reiniciar el servidor.
+
+Para llevarlo a producción también haría falta:
+
 - [ ] Calcular el total del pedido en el código y no solo con las instrucciones del modelo.
-- [ ] Manejo de errores cuando falla la API de Gemini o de WhatsApp.
 - [ ] Validar la firma de los mensajes que llegan de Meta.
-- [ ] Soporte para mensajes que no sean de texto (imágenes, audios).
+- [ ] Transcribir audios y soportar imágenes.
 
 ## Autor
 
